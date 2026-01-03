@@ -1,5 +1,7 @@
+from typing import Any
+
 import anthropic
-from typing import List, Optional, Dict, Any
+
 
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
@@ -43,22 +45,21 @@ All responses must be:
 4. **Example-supported** - Include relevant examples when they aid understanding
 Provide only the direct answer to what was asked.
 """
-    
+
     def __init__(self, api_key: str, model: str):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
-        
+
         # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
-    
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
+
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: str | None = None,
+        tools: list | None = None,
+        tool_manager=None,
+    ) -> str:
         """
         Generate AI response with optional multi-round tool usage.
 
@@ -89,7 +90,7 @@ Provide only the direct answer to what was asked.
         api_params = {
             **self.base_params,
             "messages": messages,
-            "system": system_content
+            "system": system_content,
         }
 
         # Add tools if available
@@ -108,19 +109,21 @@ Provide only the direct answer to what was asked.
                 system=system_content,
                 tools=tools,
                 tool_manager=tool_manager,
-                depth=1
+                depth=1,
             )
 
         # Return direct response (no tool use)
         return self._extract_text_response(response)
 
-    def _continue_tool_loop(self,
-                            response,
-                            messages: List[Dict[str, Any]],
-                            system: str,
-                            tools: List,
-                            tool_manager,
-                            depth: int) -> str:
+    def _continue_tool_loop(
+        self,
+        response,
+        messages: list[dict[str, Any]],
+        system: str,
+        tools: list,
+        tool_manager,
+        depth: int,
+    ) -> str:
         """
         Recursively handle tool execution rounds.
 
@@ -149,22 +152,25 @@ Provide only the direct answer to what was asked.
             if content_block.type == "tool_use":
                 try:
                     tool_result = tool_manager.execute_tool(
-                        content_block.name,
-                        **content_block.input
+                        content_block.name, **content_block.input
                     )
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": content_block.id,
-                        "content": tool_result
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": content_block.id,
+                            "content": tool_result,
+                        }
+                    )
                 except Exception as e:
                     # Mark error but continue with other tools
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": content_block.id,
-                        "content": f"Error executing tool: {str(e)}",
-                        "is_error": True
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": content_block.id,
+                            "content": f"Error executing tool: {str(e)}",
+                            "is_error": True,
+                        }
+                    )
                     has_error = True
 
         # Add tool results to messages
@@ -175,11 +181,7 @@ Provide only the direct answer to what was asked.
         allow_more_tools = depth < self.MAX_TOOL_ROUNDS and not has_error
 
         # Prepare next API call
-        next_params = {
-            **self.base_params,
-            "messages": new_messages,
-            "system": system
-        }
+        next_params = {**self.base_params, "messages": new_messages, "system": system}
 
         # Only include tools if we're allowing more rounds
         if allow_more_tools:
@@ -198,7 +200,7 @@ Provide only the direct answer to what was asked.
                 system=system,
                 tools=tools,
                 tool_manager=tool_manager,
-                depth=depth + 1
+                depth=depth + 1,
             )
 
         # Termination: extract text response
@@ -215,6 +217,6 @@ Provide only the direct answer to what was asked.
             Text content from the response, or empty string if none found
         """
         for block in response.content:
-            if hasattr(block, 'text'):
+            if hasattr(block, "text"):
                 return block.text
         return ""

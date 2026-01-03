@@ -7,15 +7,16 @@ These tests verify:
 3. Filtering by course_name and lesson_number works
 4. Results are formatted correctly
 """
-import pytest
-import sys
+
 import os
+import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from unittest.mock import Mock, MagicMock, patch
-from search_tools import CourseSearchTool, CourseOutlineTool, ToolManager
+from unittest.mock import Mock
+
+from search_tools import CourseOutlineTool, CourseSearchTool, ToolManager
 from vector_store import SearchResults
 
 
@@ -34,10 +35,12 @@ class TestCourseSearchToolExecute:
             documents=["This is lesson content about tool use."],
             metadata=[{"course_title": "Test Course", "lesson_number": 1}],
             distances=[0.5],
-            error=None
+            error=None,
         )
         self.mock_vector_store.search.return_value = mock_results
-        self.mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson1"
+        self.mock_vector_store.get_lesson_link.return_value = (
+            "https://example.com/lesson1"
+        )
 
         # Act
         result = self.search_tool.execute(query="tool use")
@@ -47,19 +50,14 @@ class TestCourseSearchToolExecute:
         assert "Lesson 1" in result
         assert "This is lesson content about tool use." in result
         self.mock_vector_store.search.assert_called_once_with(
-            query="tool use",
-            course_name=None,
-            lesson_number=None
+            query="tool use", course_name=None, lesson_number=None
         )
 
     def test_execute_with_no_results_returns_message(self):
         """Test that empty results return appropriate message"""
         # Arrange
         mock_results = SearchResults(
-            documents=[],
-            metadata=[],
-            distances=[],
-            error=None
+            documents=[], metadata=[], distances=[], error=None
         )
         self.mock_vector_store.search.return_value = mock_results
 
@@ -76,7 +74,7 @@ class TestCourseSearchToolExecute:
             documents=[],
             metadata=[],
             distances=[],
-            error="Search error: Database connection failed"
+            error="Search error: Database connection failed",
         )
         self.mock_vector_store.search.return_value = mock_results
 
@@ -94,7 +92,7 @@ class TestCourseSearchToolExecute:
             documents=["Filtered content"],
             metadata=[{"course_title": "MCP Course", "lesson_number": 2}],
             distances=[0.3],
-            error=None
+            error=None,
         )
         self.mock_vector_store.search.return_value = mock_results
         self.mock_vector_store.get_lesson_link.return_value = None
@@ -104,9 +102,7 @@ class TestCourseSearchToolExecute:
 
         # Assert
         self.mock_vector_store.search.assert_called_once_with(
-            query="MCP",
-            course_name="MCP",
-            lesson_number=None
+            query="MCP", course_name="MCP", lesson_number=None
         )
         assert "MCP Course" in result
 
@@ -117,7 +113,7 @@ class TestCourseSearchToolExecute:
             documents=["Lesson 3 content"],
             metadata=[{"course_title": "Test Course", "lesson_number": 3}],
             distances=[0.2],
-            error=None
+            error=None,
         )
         self.mock_vector_store.search.return_value = mock_results
         self.mock_vector_store.get_lesson_link.return_value = None
@@ -127,9 +123,7 @@ class TestCourseSearchToolExecute:
 
         # Assert
         self.mock_vector_store.search.assert_called_once_with(
-            query="content",
-            course_name=None,
-            lesson_number=3
+            query="content", course_name=None, lesson_number=3
         )
         assert "Lesson 3" in result
 
@@ -140,23 +134,21 @@ class TestCourseSearchToolExecute:
             documents=["Specific content"],
             metadata=[{"course_title": "Computer Use", "lesson_number": 5}],
             distances=[0.1],
-            error=None
+            error=None,
         )
         self.mock_vector_store.search.return_value = mock_results
-        self.mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson5"
+        self.mock_vector_store.get_lesson_link.return_value = (
+            "https://example.com/lesson5"
+        )
 
         # Act
         result = self.search_tool.execute(
-            query="computer use",
-            course_name="Computer Use",
-            lesson_number=5
+            query="computer use", course_name="Computer Use", lesson_number=5
         )
 
         # Assert
         self.mock_vector_store.search.assert_called_once_with(
-            query="computer use",
-            course_name="Computer Use",
-            lesson_number=5
+            query="computer use", course_name="Computer Use", lesson_number=5
         )
         assert "Computer Use" in result
         assert "Lesson 5" in result
@@ -168,13 +160,15 @@ class TestCourseSearchToolExecute:
             documents=["Content 1", "Content 2"],
             metadata=[
                 {"course_title": "Course A", "lesson_number": 1},
-                {"course_title": "Course A", "lesson_number": 2}
+                {"course_title": "Course A", "lesson_number": 2},
             ],
             distances=[0.1, 0.2],
-            error=None
+            error=None,
         )
         self.mock_vector_store.search.return_value = mock_results
-        self.mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson"
+        self.mock_vector_store.get_lesson_link.return_value = (
+            "https://example.com/lesson"
+        )
 
         # Act
         self.search_tool.execute(query="test")
@@ -187,10 +181,7 @@ class TestCourseSearchToolExecute:
         """Test that no results message includes filter information"""
         # Arrange
         mock_results = SearchResults(
-            documents=[],
-            metadata=[],
-            distances=[],
-            error=None
+            documents=[], metadata=[], distances=[], error=None
         )
         self.mock_vector_store.search.return_value = mock_results
 
@@ -259,7 +250,7 @@ class TestToolManager:
             documents=["test content"],
             metadata=[{"course_title": "Test", "lesson_number": 1}],
             distances=[0.5],
-            error=None
+            error=None,
         )
         mock_store.search.return_value = mock_results
         mock_store.get_lesson_link.return_value = None
@@ -288,7 +279,7 @@ class TestToolManager:
             documents=["content"],
             metadata=[{"course_title": "Test Course", "lesson_number": 1}],
             distances=[0.5],
-            error=None
+            error=None,
         )
         mock_store.search.return_value = mock_results
         mock_store.get_lesson_link.return_value = "https://example.com"
@@ -311,7 +302,7 @@ class TestToolManager:
             documents=["content"],
             metadata=[{"course_title": "Test", "lesson_number": 1}],
             distances=[0.5],
-            error=None
+            error=None,
         )
         mock_store.search.return_value = mock_results
         mock_store.get_lesson_link.return_value = None

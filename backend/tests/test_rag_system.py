@@ -7,20 +7,21 @@ These tests verify:
 3. Tools are properly registered and available
 4. Sources are correctly retrieved and returned
 """
-import pytest
-import sys
+
 import os
+import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from unittest.mock import Mock, MagicMock, patch, PropertyMock
 from dataclasses import dataclass
+from unittest.mock import Mock, patch
 
 
 @dataclass
 class MockConfig:
     """Mock configuration for testing"""
+
     ANTHROPIC_API_KEY: str = "test-api-key"
     ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
@@ -34,10 +35,10 @@ class MockConfig:
 class TestRAGSystemInitialization:
     """Test RAGSystem initialization and component setup"""
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_rag_system_registers_search_tool(
         self, mock_session, mock_doc_proc, mock_ai_gen, mock_vector_store
     ):
@@ -51,10 +52,10 @@ class TestRAGSystemInitialization:
         assert "search_course_content" in rag.tool_manager.tools
         assert rag.search_tool is not None
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_rag_system_registers_outline_tool(
         self, mock_session, mock_doc_proc, mock_ai_gen, mock_vector_store
     ):
@@ -68,10 +69,10 @@ class TestRAGSystemInitialization:
         assert "get_course_outline" in rag.tool_manager.tools
         assert rag.outline_tool is not None
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_tool_definitions_are_correct(
         self, mock_session, mock_doc_proc, mock_ai_gen, mock_vector_store
     ):
@@ -86,7 +87,9 @@ class TestRAGSystemInitialization:
         assert len(definitions) == 2
 
         # Verify search tool definition
-        search_def = next(d for d in definitions if d["name"] == "search_course_content")
+        search_def = next(
+            d for d in definitions if d["name"] == "search_course_content"
+        )
         assert "input_schema" in search_def
         assert "query" in search_def["input_schema"]["properties"]
 
@@ -99,10 +102,10 @@ class TestRAGSystemInitialization:
 class TestRAGSystemQuery:
     """Test RAGSystem.query() method"""
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_query_calls_ai_generator_with_tools(
         self, mock_session_class, mock_doc_proc, mock_ai_gen_class, mock_vector_store
     ):
@@ -133,10 +136,10 @@ class TestRAGSystemQuery:
         assert "tool_manager" in call_kwargs
         assert call_kwargs["tool_manager"] == rag.tool_manager
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_query_returns_response_and_sources(
         self, mock_session_class, mock_doc_proc, mock_ai_gen_class, mock_vector_store
     ):
@@ -155,7 +158,9 @@ class TestRAGSystemQuery:
         rag = RAGSystem(config)
 
         # Simulate sources being set by tool execution
-        rag.search_tool.last_sources = [{"text": "Course A", "url": "http://example.com"}]
+        rag.search_tool.last_sources = [
+            {"text": "Course A", "url": "http://example.com"}
+        ]
 
         # Act
         response, sources = rag.query("Test query")
@@ -165,10 +170,10 @@ class TestRAGSystemQuery:
         assert len(sources) == 1
         assert sources[0]["text"] == "Course A"
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_query_resets_sources_after_retrieval(
         self, mock_session_class, mock_doc_proc, mock_ai_gen_class, mock_vector_store
     ):
@@ -194,10 +199,10 @@ class TestRAGSystemQuery:
         # Assert - sources should be empty after query
         assert rag.search_tool.last_sources == []
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_query_updates_session_history(
         self, mock_session_class, mock_doc_proc, mock_ai_gen_class, mock_vector_store
     ):
@@ -220,15 +225,13 @@ class TestRAGSystemQuery:
 
         # Assert
         mock_session_manager.add_exchange.assert_called_once_with(
-            "session-123",
-            "User question",
-            "AI Response"
+            "session-123", "User question", "AI Response"
         )
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_query_includes_conversation_history(
         self, mock_session_class, mock_doc_proc, mock_ai_gen_class, mock_vector_store
     ):
@@ -257,12 +260,16 @@ class TestRAGSystemQuery:
 class TestRAGSystemIntegration:
     """Integration tests for the full RAG pipeline"""
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_full_query_flow_with_tool_execution(
-        self, mock_session_class, mock_doc_proc, mock_ai_gen_class, mock_vector_store_class
+        self,
+        mock_session_class,
+        mock_doc_proc,
+        mock_ai_gen_class,
+        mock_vector_store_class,
     ):
         """Test the complete query flow including tool execution"""
         from rag_system import RAGSystem
@@ -275,7 +282,7 @@ class TestRAGSystemIntegration:
             documents=["Content about the topic"],
             metadata=[{"course_title": "Test Course", "lesson_number": 1}],
             distances=[0.5],
-            error=None
+            error=None,
         )
         mock_vector_store.get_lesson_link.return_value = "http://example.com/lesson1"
 
@@ -308,10 +315,10 @@ class TestRAGSystemIntegration:
 class TestRAGSystemCourseAnalytics:
     """Test course analytics functionality"""
 
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.SessionManager')
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.SessionManager")
     def test_get_course_analytics_returns_stats(
         self, mock_session, mock_doc_proc, mock_ai_gen, mock_vector_store_class
     ):
@@ -322,7 +329,11 @@ class TestRAGSystemCourseAnalytics:
         mock_vector_store_class.return_value = mock_vector_store
         mock_vector_store.get_course_count.return_value = 5
         mock_vector_store.get_existing_course_titles.return_value = [
-            "Course A", "Course B", "Course C", "Course D", "Course E"
+            "Course A",
+            "Course B",
+            "Course C",
+            "Course D",
+            "Course E",
         ]
 
         config = MockConfig()

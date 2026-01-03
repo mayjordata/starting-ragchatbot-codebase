@@ -8,19 +8,23 @@ These tests verify:
 4. Tool results are correctly passed back to Claude
 5. Error handling and termination conditions
 """
-import pytest
-import sys
+
 import os
+import sys
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from unittest.mock import Mock, MagicMock, patch, call
+from unittest.mock import Mock, patch
+
 from ai_generator import AIGenerator
 
 
 class MockTextBlock:
     """Mock for Anthropic TextBlock response"""
+
     def __init__(self, text):
         self.type = "text"
         self.text = text
@@ -28,6 +32,7 @@ class MockTextBlock:
 
 class MockToolUseBlock:
     """Mock for Anthropic ToolUseBlock response"""
+
     def __init__(self, tool_id, name, input_data):
         self.type = "tool_use"
         self.id = tool_id
@@ -37,6 +42,7 @@ class MockToolUseBlock:
 
 class MockResponse:
     """Mock for Anthropic API response"""
+
     def __init__(self, content, stop_reason="end_turn"):
         self.content = content
         self.stop_reason = stop_reason
@@ -45,7 +51,7 @@ class MockResponse:
 class TestAIGeneratorWithoutTools:
     """Test AIGenerator when not using tools"""
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_generate_response_returns_text(self, mock_anthropic_class):
         """Test that a simple query returns text response"""
         # Arrange
@@ -53,7 +59,7 @@ class TestAIGeneratorWithoutTools:
         mock_anthropic_class.return_value = mock_client
         mock_response = MockResponse(
             content=[MockTextBlock("This is a response about course content.")],
-            stop_reason="end_turn"
+            stop_reason="end_turn",
         )
         mock_client.messages.create.return_value = mock_response
 
@@ -66,15 +72,16 @@ class TestAIGeneratorWithoutTools:
         assert result == "This is a response about course content."
         mock_client.messages.create.assert_called_once()
 
-    @patch('ai_generator.anthropic.Anthropic')
-    def test_generate_response_includes_conversation_history(self, mock_anthropic_class):
+    @patch("ai_generator.anthropic.Anthropic")
+    def test_generate_response_includes_conversation_history(
+        self, mock_anthropic_class
+    ):
         """Test that conversation history is included in system prompt"""
         # Arrange
         mock_client = Mock()
         mock_anthropic_class.return_value = mock_client
         mock_response = MockResponse(
-            content=[MockTextBlock("Response with context.")],
-            stop_reason="end_turn"
+            content=[MockTextBlock("Response with context.")], stop_reason="end_turn"
         )
         mock_client.messages.create.return_value = mock_response
 
@@ -83,7 +90,7 @@ class TestAIGeneratorWithoutTools:
         # Act
         result = generator.generate_response(
             query="Follow up question",
-            conversation_history="User: Previous question\nAssistant: Previous answer"
+            conversation_history="User: Previous question\nAssistant: Previous answer",
         )
 
         # Assert
@@ -96,7 +103,7 @@ class TestAIGeneratorWithoutTools:
 class TestSingleRoundToolUse:
     """Test AIGenerator with single round of tool use (regression tests)"""
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_single_tool_call_returns_answer(self, mock_anthropic_class):
         """Test that single tool use works and returns answer"""
         # Arrange
@@ -105,14 +112,18 @@ class TestSingleRoundToolUse:
 
         tool_use_response = MockResponse(
             content=[
-                MockToolUseBlock("tool_123", "search_course_content", {"query": "tool use"})
+                MockToolUseBlock(
+                    "tool_123", "search_course_content", {"query": "tool use"}
+                )
             ],
-            stop_reason="tool_use"
+            stop_reason="tool_use",
         )
 
         final_response = MockResponse(
-            content=[MockTextBlock("Tool use allows Claude to call external functions.")],
-            stop_reason="end_turn"
+            content=[
+                MockTextBlock("Tool use allows Claude to call external functions.")
+            ],
+            stop_reason="end_turn",
         )
 
         mock_client.messages.create.side_effect = [tool_use_response, final_response]
@@ -126,7 +137,7 @@ class TestSingleRoundToolUse:
         result = generator.generate_response(
             query="What is tool use?",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Assert
@@ -134,7 +145,7 @@ class TestSingleRoundToolUse:
         assert mock_tool_manager.execute_tool.call_count == 1
         assert "Tool use allows Claude" in result
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_no_tool_use_returns_direct_answer(self, mock_anthropic_class):
         """Test that queries not needing tools return directly"""
         # Arrange
@@ -143,7 +154,7 @@ class TestSingleRoundToolUse:
 
         mock_response = MockResponse(
             content=[MockTextBlock("Direct answer without tools.")],
-            stop_reason="end_turn"
+            stop_reason="end_turn",
         )
         mock_client.messages.create.return_value = mock_response
 
@@ -153,14 +164,14 @@ class TestSingleRoundToolUse:
         result = generator.generate_response(
             query="What is 2+2?",
             tools=[{"name": "search_course_content"}],
-            tool_manager=Mock()
+            tool_manager=Mock(),
         )
 
         # Assert
         assert mock_client.messages.create.call_count == 1
         assert result == "Direct answer without tools."
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_tool_result_passed_to_claude(self, mock_anthropic_class):
         """Test that tool results are correctly formatted and sent back"""
         # Arrange
@@ -168,13 +179,14 @@ class TestSingleRoundToolUse:
         mock_anthropic_class.return_value = mock_client
 
         tool_use_response = MockResponse(
-            content=[MockToolUseBlock("tool_456", "search_course_content", {"query": "MCP"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock("tool_456", "search_course_content", {"query": "MCP"})
+            ],
+            stop_reason="tool_use",
         )
 
         final_response = MockResponse(
-            content=[MockTextBlock("MCP is a protocol...")],
-            stop_reason="end_turn"
+            content=[MockTextBlock("MCP is a protocol...")], stop_reason="end_turn"
         )
 
         mock_client.messages.create.side_effect = [tool_use_response, final_response]
@@ -188,7 +200,7 @@ class TestSingleRoundToolUse:
         generator.generate_response(
             query="What is MCP?",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Assert - verify the second API call includes tool_result
@@ -207,7 +219,7 @@ class TestSingleRoundToolUse:
 class TestMultiRoundToolUse:
     """Test sequential tool calling (up to 2 rounds)"""
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_two_round_tool_use_completes(self, mock_anthropic_class):
         """Test that Claude can use tools in 2 sequential rounds"""
         # Arrange
@@ -216,28 +228,38 @@ class TestMultiRoundToolUse:
 
         # Round 1: Claude searches for content
         round1_response = MockResponse(
-            content=[MockToolUseBlock("tool_1", "search_course_content", {"query": "MCP basics"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock(
+                    "tool_1", "search_course_content", {"query": "MCP basics"}
+                )
+            ],
+            stop_reason="tool_use",
         )
 
         # Round 2: Claude gets course outline for more context
         round2_response = MockResponse(
-            content=[MockToolUseBlock("tool_2", "get_course_outline", {"course_name": "MCP"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock("tool_2", "get_course_outline", {"course_name": "MCP"})
+            ],
+            stop_reason="tool_use",
         )
 
         # Final: Claude provides answer
         final_response = MockResponse(
             content=[MockTextBlock("MCP is covered in lessons 1-3 of the MCP course.")],
-            stop_reason="end_turn"
+            stop_reason="end_turn",
         )
 
-        mock_client.messages.create.side_effect = [round1_response, round2_response, final_response]
+        mock_client.messages.create.side_effect = [
+            round1_response,
+            round2_response,
+            final_response,
+        ]
 
         mock_tool_manager = Mock()
         mock_tool_manager.execute_tool.side_effect = [
             "Content about MCP basics...",
-            "Course: MCP\nLesson 1: Intro\nLesson 2: Architecture"
+            "Course: MCP\nLesson 1: Intro\nLesson 2: Architecture",
         ]
 
         generator = AIGenerator(api_key="test-key", model="test-model")
@@ -246,7 +268,7 @@ class TestMultiRoundToolUse:
         result = generator.generate_response(
             query="What is MCP and where is it covered?",
             tools=[{"name": "search_course_content"}, {"name": "get_course_outline"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Assert
@@ -254,7 +276,7 @@ class TestMultiRoundToolUse:
         assert mock_tool_manager.execute_tool.call_count == 2
         assert "MCP is covered" in result
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_max_rounds_enforced(self, mock_anthropic_class):
         """Test that third tool_use is not honored (max 2 rounds)"""
         # Arrange
@@ -263,24 +285,32 @@ class TestMultiRoundToolUse:
 
         # Round 1: tool use
         round1_response = MockResponse(
-            content=[MockToolUseBlock("tool_1", "search_course_content", {"query": "first"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock("tool_1", "search_course_content", {"query": "first"})
+            ],
+            stop_reason="tool_use",
         )
 
         # Round 2: tool use
         round2_response = MockResponse(
-            content=[MockToolUseBlock("tool_2", "search_course_content", {"query": "second"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock("tool_2", "search_course_content", {"query": "second"})
+            ],
+            stop_reason="tool_use",
         )
 
         # Round 3: Would want tool use, but should be forced to give text
         # (tools not included in API call, so Claude gives text)
         round3_response = MockResponse(
             content=[MockTextBlock("Final answer after max rounds.")],
-            stop_reason="end_turn"
+            stop_reason="end_turn",
         )
 
-        mock_client.messages.create.side_effect = [round1_response, round2_response, round3_response]
+        mock_client.messages.create.side_effect = [
+            round1_response,
+            round2_response,
+            round3_response,
+        ]
 
         mock_tool_manager = Mock()
         mock_tool_manager.execute_tool.side_effect = ["Result 1", "Result 2"]
@@ -291,7 +321,7 @@ class TestMultiRoundToolUse:
         result = generator.generate_response(
             query="Complex multi-step query",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Assert
@@ -303,7 +333,7 @@ class TestMultiRoundToolUse:
         third_call_args = mock_client.messages.create.call_args_list[2]
         assert "tools" not in third_call_args.kwargs
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_early_termination_on_end_turn(self, mock_anthropic_class):
         """Test that loop stops when Claude returns end_turn after first round"""
         # Arrange
@@ -312,14 +342,16 @@ class TestMultiRoundToolUse:
 
         # Round 1: tool use
         round1_response = MockResponse(
-            content=[MockToolUseBlock("tool_1", "search_course_content", {"query": "test"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock("tool_1", "search_course_content", {"query": "test"})
+            ],
+            stop_reason="tool_use",
         )
 
         # Claude satisfied after first tool, returns text
         final_response = MockResponse(
             content=[MockTextBlock("Got enough info from first search.")],
-            stop_reason="end_turn"
+            stop_reason="end_turn",
         )
 
         mock_client.messages.create.side_effect = [round1_response, final_response]
@@ -333,7 +365,7 @@ class TestMultiRoundToolUse:
         result = generator.generate_response(
             query="Simple query",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Assert
@@ -341,7 +373,7 @@ class TestMultiRoundToolUse:
         assert mock_tool_manager.execute_tool.call_count == 1
         assert "Got enough info" in result
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_tools_included_in_both_rounds(self, mock_anthropic_class):
         """Test that tools are available in both round 1 and round 2"""
         # Arrange
@@ -350,18 +382,23 @@ class TestMultiRoundToolUse:
 
         round1_response = MockResponse(
             content=[MockToolUseBlock("t1", "search_course_content", {"query": "a"})],
-            stop_reason="tool_use"
+            stop_reason="tool_use",
         )
         round2_response = MockResponse(
-            content=[MockToolUseBlock("t2", "get_course_outline", {"course_name": "X"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock("t2", "get_course_outline", {"course_name": "X"})
+            ],
+            stop_reason="tool_use",
         )
         final_response = MockResponse(
-            content=[MockTextBlock("Done")],
-            stop_reason="end_turn"
+            content=[MockTextBlock("Done")], stop_reason="end_turn"
         )
 
-        mock_client.messages.create.side_effect = [round1_response, round2_response, final_response]
+        mock_client.messages.create.side_effect = [
+            round1_response,
+            round2_response,
+            final_response,
+        ]
 
         mock_tool_manager = Mock()
         mock_tool_manager.execute_tool.side_effect = ["R1", "R2"]
@@ -370,7 +407,9 @@ class TestMultiRoundToolUse:
         generator = AIGenerator(api_key="test-key", model="test-model")
 
         # Act
-        generator.generate_response(query="Test", tools=test_tools, tool_manager=mock_tool_manager)
+        generator.generate_response(
+            query="Test", tools=test_tools, tool_manager=mock_tool_manager
+        )
 
         # Assert - tools in first two calls
         first_call = mock_client.messages.create.call_args_list[0]
@@ -383,7 +422,7 @@ class TestMultiRoundToolUse:
 class TestToolErrorHandling:
     """Test error handling during tool execution"""
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_tool_error_prevents_further_rounds(self, mock_anthropic_class):
         """Test that tool execution error stops further tool use"""
         # Arrange
@@ -391,13 +430,15 @@ class TestToolErrorHandling:
         mock_anthropic_class.return_value = mock_client
 
         tool_use_response = MockResponse(
-            content=[MockToolUseBlock("tool_1", "search_course_content", {"query": "test"})],
-            stop_reason="tool_use"
+            content=[
+                MockToolUseBlock("tool_1", "search_course_content", {"query": "test"})
+            ],
+            stop_reason="tool_use",
         )
 
         final_response = MockResponse(
             content=[MockTextBlock("Handled the error gracefully.")],
-            stop_reason="end_turn"
+            stop_reason="end_turn",
         )
 
         mock_client.messages.create.side_effect = [tool_use_response, final_response]
@@ -411,7 +452,7 @@ class TestToolErrorHandling:
         result = generator.generate_response(
             query="Test",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Assert
@@ -424,10 +465,10 @@ class TestToolErrorHandling:
         # Verify error was sent to Claude
         messages = second_call.kwargs["messages"]
         tool_result = messages[2]["content"][0]
-        assert tool_result["is_error"] == True
+        assert tool_result["is_error"] is True
         assert "Error executing tool" in tool_result["content"]
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_api_error_propagates(self, mock_anthropic_class):
         """Test that API errors are not caught"""
         # Arrange
@@ -443,7 +484,7 @@ class TestToolErrorHandling:
 
         assert "API Error" in str(exc_info.value)
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_without_tool_manager_returns_text(self, mock_anthropic_class):
         """Test that tool_use without tool_manager returns available text"""
         # Arrange
@@ -453,9 +494,9 @@ class TestToolErrorHandling:
         response = MockResponse(
             content=[
                 MockTextBlock("I would search but can't."),
-                MockToolUseBlock("tool_1", "search", {"query": "x"})
+                MockToolUseBlock("tool_1", "search", {"query": "x"}),
             ],
-            stop_reason="tool_use"
+            stop_reason="tool_use",
         )
 
         mock_client.messages.create.return_value = response
@@ -464,9 +505,7 @@ class TestToolErrorHandling:
 
         # Act - no tool_manager
         result = generator.generate_response(
-            query="Search",
-            tools=[{"name": "search"}],
-            tool_manager=None
+            query="Search", tools=[{"name": "search"}], tool_manager=None
         )
 
         # Assert
@@ -476,7 +515,7 @@ class TestToolErrorHandling:
 class TestMessageChainConstruction:
     """Test that message history is correctly built across rounds"""
 
-    @patch('ai_generator.anthropic.Anthropic')
+    @patch("ai_generator.anthropic.Anthropic")
     def test_messages_accumulate_correctly(self, mock_anthropic_class):
         """Test that all messages are preserved across rounds"""
         # Arrange
@@ -485,18 +524,21 @@ class TestMessageChainConstruction:
 
         round1_response = MockResponse(
             content=[MockToolUseBlock("t1", "search", {"query": "a"})],
-            stop_reason="tool_use"
+            stop_reason="tool_use",
         )
         round2_response = MockResponse(
             content=[MockToolUseBlock("t2", "outline", {"course": "b"})],
-            stop_reason="tool_use"
+            stop_reason="tool_use",
         )
         final_response = MockResponse(
-            content=[MockTextBlock("Final")],
-            stop_reason="end_turn"
+            content=[MockTextBlock("Final")], stop_reason="end_turn"
         )
 
-        mock_client.messages.create.side_effect = [round1_response, round2_response, final_response]
+        mock_client.messages.create.side_effect = [
+            round1_response,
+            round2_response,
+            final_response,
+        ]
 
         mock_tool_manager = Mock()
         mock_tool_manager.execute_tool.side_effect = ["Result 1", "Result 2"]
@@ -507,7 +549,7 @@ class TestMessageChainConstruction:
         generator.generate_response(
             query="Complex query",
             tools=[{"name": "search"}, {"name": "outline"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Assert - check third call has full history
