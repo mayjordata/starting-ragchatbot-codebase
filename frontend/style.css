@@ -111,6 +111,37 @@ header h1 {
     margin-bottom: 0;
 }
 
+/* New Chat Button */
+.new-chat-button {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    background: var(--primary-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 1.5rem;
+}
+
+.new-chat-button:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.new-chat-button:active {
+    transform: translateY(0);
+}
+
+.new-chat-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
 /* Main Chat Area */
 .chat-main {
     flex: 1;
@@ -241,8 +272,41 @@ header h1 {
 }
 
 .sources-content {
-    padding: 0 0.5rem 0.25rem 1.5rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Source Pills */
+.source-pill {
+    display: inline-block;
+    padding: 0.4rem 0.75rem;
+    background: rgba(37, 99, 235, 0.15);
+    border: 1px solid rgba(37, 99, 235, 0.3);
+    border-radius: 20px;
+    color: var(--primary-color);
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.source-pill:hover {
+    background: rgba(37, 99, 235, 0.25);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.source-pill-inactive {
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.3);
     color: var(--text-secondary);
+    cursor: default;
+}
+
+.source-pill-inactive:hover {
+    transform: none;
 }
 
 /* Markdown formatting styles */
